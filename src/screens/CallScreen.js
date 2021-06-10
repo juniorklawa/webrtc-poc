@@ -8,6 +8,7 @@ import {
   RTCView,
 } from "react-native-webrtc";
 import { db } from "../utilities/firebase";
+import { socket } from "../utilities/socket";
 
 const configuration = {
   iceServers: [
@@ -34,11 +35,14 @@ export default function CallScreen({ setScreen, screens, roomId }) {
   const [localStream, setLocalStream] = useState();
   const [remoteStream, setRemoteStream] = useState();
   const [cachedLocalPC, setCachedLocalPC] = useState();
+  const [currentCallerCandidates, setCurrentCallerCandidates] = useState([])
 
   const [isMuted, setIsMuted] = useState(false);
 
   useEffect(() => {
-    // startLocalStream();
+    socket.on("answer", (data) => {
+      console.log("data");
+    });
   }, []);
 
   const startLocalStream = async () => {
@@ -74,9 +78,9 @@ export default function CallScreen({ setScreen, screens, roomId }) {
     localPC.addStream(localStream);
 
     const roomRef = await db.collection("rooms").doc(id);
-    const callerCandidatesCollection = roomRef.collection("callerCandidates");
+    // const callerCandidatesCollection = roomRef.collection("callerCandidates");
 
-    // Manda as informações de conexão de audio e video para o banco, 
+    // Manda as informações de conexão de audio e video para o banco,
     // se candidate não vier, quer dizer que todas essas informações
     // ja foram enviadas para o firebase.
     localPC.onicecandidate = (e) => {
@@ -84,7 +88,8 @@ export default function CallScreen({ setScreen, screens, roomId }) {
         console.log("Got final candidate!");
         return;
       }
-      callerCandidatesCollection.add(e.candidate.toJSON());
+      socket.emit("callerCandidates", e.candidate.toJSON());
+      // callerCandidatesCollection.add(e.candidate.toJSON());
     };
 
     // Adiciona a stream remota no local peer
@@ -94,18 +99,16 @@ export default function CallScreen({ setScreen, screens, roomId }) {
         setRemoteStream(e.stream);
       }
     };
-
     // cria a oferta
     const offer = await localPC.createOffer();
     // colocar a oferta como configuração do peer connection local
+    socket.emit("offer", offer);
     await localPC.setLocalDescription(offer);
 
-
-     // coloca a oferta no banco para que o peer remoto possa ver
+    // coloca a oferta no banco para que o peer remoto possa ver
     const roomWithOffer = { offer };
     await roomRef.set(roomWithOffer);
 
-    	
     // TODO entender
     roomRef.onSnapshot(async (snapshot) => {
       const data = snapshot.data();

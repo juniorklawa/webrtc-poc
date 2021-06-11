@@ -35,13 +35,14 @@ export default function CallScreen({ setScreen, screens, roomId }) {
   const [localStream, setLocalStream] = useState();
   const [remoteStream, setRemoteStream] = useState();
   const [cachedLocalPC, setCachedLocalPC] = useState();
-  const [currentCallerCandidates, setCurrentCallerCandidates] = useState([])
+  const [currentCalleeCandidates, setCurrentCalleeCandidates] = useState([]);
 
   const [isMuted, setIsMuted] = useState(false);
 
   useEffect(() => {
-    socket.on("answer", (data) => {
-      console.log("data");
+    socket.on("calleeCandidates", (data) => {
+      console.log("calleeCandidates", data);
+      setCurrentCalleeCandidates(data);
     });
   }, []);
 
@@ -123,11 +124,14 @@ export default function CallScreen({ setScreen, screens, roomId }) {
       snapshot.docChanges().forEach(async (change) => {
         if (change.type === "added") {
           let data = change.doc.data();
-          console.log("calleeCandidates, dentro do if", data);
           await localPC.addIceCandidate(new RTCIceCandidate(data));
         }
       });
     });
+
+    // currentCalleeCandidates.forEach(async (data) => {
+    //   await localPC.addIceCandidate(new RTCIceCandidate(data));
+    // });
 
     setCachedLocalPC(localPC);
   };

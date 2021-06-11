@@ -97,7 +97,7 @@ export default function JoinScreen({ setScreen, screens, roomId }) {
         console.log("Got final candidate!");
         return;
       }
-      // socket.emit("calleeCandidates", e.candidate.toJSON());
+      socket.emit("calleeCandidates", e.candidate.toJSON());
       calleeCandidatesCollection.add(e.candidate.toJSON());
     };
 
